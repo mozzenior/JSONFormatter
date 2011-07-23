@@ -4,187 +4,300 @@
 #include <string.h>
 
 
-unsigned int indent_count = 0;
+unsigned int indent = 0;
 
+
+extern int yylex( void );
+void print_indent( void );
+void yyerror( const char * );
 %}
 
 %union {
 	char *text;
 }
 
+%token <text> ROOT
+%token <text> OPEN_BRACE
+%token <text> CLOSE_BRACE
+%token <text> OPEN_BRACKET
+%token <text> CLOSE_BRACKET
+%token <text> COMMA
+%token <text> COLON
 %token <text> NUMBER
 %token <text> STRING
 %token <text> BOOLEAN
 %token <text> JSNULL
 
-%type <text> root
-%type <text> primitive_types
-%type <text> object
-%type <text> object_body
-%type <text> object_body_entry
-%type <text> array
-%type <text> array_body
-%type <text> array_body_entry
-%type <text> number
-%type <text> string
-%type <text> boolean
-%type <text> jsnull
+%{
+enum yytokentype prev_token = ROOT;
+%}
 
 %%
 
 root:	object
 		{
-			$$ = $1;
-			printf( "root: [%s]\n", $$ );
-			free( $$ );
-			$$ = NULL;
+			printf( "\n" );
 		}
 	|	array
 		{
-			$$ = $1;
-			printf( "root: [%s]\n", $$ );
-			free( $$ );
-			$$ = NULL;
+			printf( "\n" );
 		}
 	;
 
 primitive_types:	object
-		{
-			$$ = $1;
-			printf( "primitive: [%s]\n", $$ );
-		}
 	|				array
-		{
-			$$ = $1;
-			printf( "primitive: [%s]\n", $$ );
-		}
 	|				number
-		{
-			$$ = $1;
-			printf( "primitive: [%s]\n", $$ );
-		}
 	|				string
-		{
-			$$ = $1;
-			printf( "primitive: [%s]\n", $$ );
-		}
 	|				boolean
-		{
-			$$ = $1;
-			printf( "primitive: [%s]\n", $$ );
-		}
 	|				jsnull
-		{
-			$$ = $1;
-			printf( "primitive: [%s]\n", $$ );
-		}
 	;
 
-object:	'{' object_body '}'
-		{
-			unsigned int length = strlen( $2 ) + 3;
-			$$ = calloc( sizeof( char ), length );
-			sprintf( $$, "{%s}", $2 );
-			printf( "Object: [%s]\n", $$ );
-		}
-	|	'{' '}'
-		{
-			$$ = strdup( "{}" );
-			printf( "Object: [%s]\n", $$ );
-		}
+object:	open_brace object_body close_brace
+	|	open_brace close_brace
 	;
 
-object_body:	object_body ',' object_body_entry
-		{
-			unsigned int length = strlen( $1 ) + strlen( $3 ) + 3;
-			$$ = calloc( sizeof( char ), length );
-			sprintf( $$, "%s, %s", $1, $3 );
-			free( $1 );
-			free( $3 );
-			printf( "Object body: [%s]\n", $$ );
-		}
+object_body:	object_body comma object_body_entry
 	|			object_body_entry
-		{
-			$$ = $1;
-			printf( "Object body: [%s]\n", $$ );
-		}
 	;
 
-object_body_entry:	string ':' primitive_types
-		{
-			unsigned int length = strlen( $1 ) + strlen( $3 ) + 3;
-			$$ = calloc( sizeof( char ), length );
-			sprintf( $$, "%s: %s", $1, $3 );
-			free( $1 );
-			free( $3 );
-			printf( "Object body entry: [%s]\n", $$ );
-		}
+object_body_entry:	string colon primitive_types
 	;
 
-array:	'[' array_body ']'
-		{
-			unsigned int length = strlen( $2 ) + 3;
-			$$ = calloc( sizeof( char ), length );
-			sprintf( $$, "[%s]", $2 );
-			free( $2 );
-			printf( "Array: [%s]\n", $$ );
-		}
-	|	'[' ']'
-		{
-			$$ = strdup( "[]" );
-			printf( "Array: [%s]\n", $$ );
-		}
+array:	open_bracket array_body close_bracket
+	|	open_bracket close_bracket
 	;
 
-array_body:	array_body ',' array_body_entry
-		{
-			unsigned int length = strlen( $1 ) + strlen( $3 ) + 3;
-			$$ = calloc( sizeof( char ), length );
-			sprintf( $$, "%s, %s", $1, $3 );
-			free( $1 );
-			free( $3 );
-			printf( "Array body: [%s]\n", $$ );
-		}
+array_body:	array_body comma array_body_entry
 	|		array_body_entry
-		{
-			$$ = $1;
-			printf( "Array body: [%s]\n", $$ );
-		}
 	;
 
 array_body_entry:	primitive_types
+	;
+
+open_brace: OPEN_BRACE
 		{
-			$$ = $1;
-			printf( "Array body entry: [%s]\n", $$ );
+			switch( prev_token ) {
+			case OPEN_BRACE:
+			case OPEN_BRACKET:
+			case COMMA:
+				print_indent();
+				printf( "{\n" );
+				break;
+			case ROOT:
+			case COLON:
+				printf( "{\n" );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = OPEN_BRACE;
+			indent++;
+		}
+	;
+
+close_brace: CLOSE_BRACE
+		{
+			indent--;
+			switch( prev_token ) {
+			case OPEN_BRACE:
+			case OPEN_BRACKET:
+				print_indent();
+				printf( "}" );
+				break;
+			case CLOSE_BRACE:
+			case CLOSE_BRACKET:
+			case NUMBER:
+			case STRING:
+			case BOOLEAN:
+			case JSNULL:
+				printf( "\n" );
+				print_indent();
+				printf( "}" );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = CLOSE_BRACE;
+		}
+	;
+
+open_bracket: OPEN_BRACKET
+		{
+			switch( prev_token ) {
+			case OPEN_BRACE:
+			case OPEN_BRACKET:
+			case COMMA:
+				print_indent();
+				printf( "[\n" );
+				break;
+			case ROOT:
+			case COLON:
+				printf( "[\n" );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = OPEN_BRACKET;
+			indent++;
+		}
+	;
+
+close_bracket: CLOSE_BRACKET
+		{
+			indent--;
+
+			switch( prev_token ) {
+			case OPEN_BRACE:
+			case OPEN_BRACKET:
+				print_indent();
+				printf( "]" );
+				break;
+			case CLOSE_BRACE:
+			case CLOSE_BRACKET:
+			case NUMBER:
+			case STRING:
+			case BOOLEAN:
+			case JSNULL:
+				printf( "\n" );
+				print_indent();
+				printf( "]" );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = CLOSE_BRACKET;
+		}
+	;
+
+comma: COMMA
+		{
+			switch( prev_token ) {
+			case CLOSE_BRACE:
+			case CLOSE_BRACKET:
+			case NUMBER:
+			case STRING:
+			case BOOLEAN:
+			case JSNULL:
+				printf( ",\n" );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = COMMA;
+		}
+	;
+
+colon: COLON
+		{
+			switch( prev_token ) {
+			case STRING:
+				printf( ": " );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = COLON;
 		}
 	;
 
 number:	NUMBER
 		{
-			$$ = strdup( $1 );
-			printf( "Number: [%s]\n", $$ );
+			switch( prev_token ) {
+			case OPEN_BRACE:
+			case OPEN_BRACKET:
+			case COMMA:
+				print_indent();
+				printf( "%s", $1 );
+				break;
+			case COLON:
+				printf( "%s", $1 );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = NUMBER;
 		}
 	;
 
 string: STRING
 		{
-			$$ = strdup( $1 );
-			printf( "String: [%s]\n", $$ );
+			switch( prev_token ) {
+			case OPEN_BRACE:
+			case OPEN_BRACKET:
+			case COMMA:
+				print_indent();
+				printf( "%s", $1 );
+				break;
+			case COLON:
+				printf( "%s", $1 );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = STRING;
 		}
 	;
 
 boolean: BOOLEAN
 		{
-			$$ = strdup( $1 );
-			printf( "Boolean: [%s]\n", $$ );
+			switch( prev_token ) {
+			case OPEN_BRACE:
+			case OPEN_BRACKET:
+			case COMMA:
+				print_indent();
+				printf( "%s", $1 );
+				break;
+			case COLON:
+				printf( "%s", $1 );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = BOOLEAN;
 		}
 	;
 
 jsnull: JSNULL
 		{
-			$$ = strdup( $1 );
-			printf( "JSNull: [%s]\n", $$ );
+			switch( prev_token ) {
+			case OPEN_BRACE:
+			case OPEN_BRACKET:
+			case COMMA:
+				print_indent();
+				printf( "%s", $1 );
+				break;
+			case COLON:
+				printf( "%s", $1 );
+				break;
+			default:
+				break;
+			}
+
+			prev_token = JSNULL;
 		}
 	;
 
 %%
+
+void print_indent( void )
+{
+	unsigned int i;
+	for ( i = 0 ; i < indent ; i++ )
+		printf( "    " );
+}
+
+
+void
+yyerror( const char *msg )
+{
+	fprintf( stderr, "YYERROR: %s\n", msg );
+}

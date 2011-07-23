@@ -24,7 +24,41 @@
 	return JSNULL;
 }
 
-[ \t\n] ;
+"{" {
+	yylval.text = yytext;
+	return OPEN_BRACE;
+}
+
+"}" {
+	yylval.text = yytext;
+	return CLOSE_BRACE;
+}
+
+"[" {
+	yylval.text = yytext;
+	return OPEN_BRACKET;
+}
+
+"]" {
+	yylval.text = yytext;
+	return CLOSE_BRACKET;
+}
+
+"," {
+	yylval.text = yytext;
+	return COMMA;
+}
+
+":" {
+	yylval.text = yytext;
+	return COLON;
+}
+
+[ \t] ;
+
+\n {
+	return 0;
+}
 
 . {
 	return yytext[ 0 ];
