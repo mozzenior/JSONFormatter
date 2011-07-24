@@ -1,13 +1,13 @@
 all: jsonformatter
 
-jsonformatter: jsonformatter.c parser.c parser.h tokenlizer.c tokenlizer.h
-	gcc -Wall -Xlinker --strip-all -O2 -o jsonformatter jsonformatter.c parser.c tokenlizer.c
+jsonformatter: jsonformatter.c parser.c parser.h scanner.c scanner.h
+	gcc -Wall -Xlinker --strip-all -O2 -o jsonformatter jsonformatter.c parser.c scanner.c
 
 parser.c parser.h: parser.y
 	bison -o parser.c --defines=parser.h parser.y
 
-tokenlizer.c tokenlizer.h: tokenlizer.l
-	flex --outfile=tokenlizer.c --header-file=tokenlizer.h tokenlizer.l
+scanner.c scanner.h: scanner.l
+	flex --outfile=scanner.c --header-file=scanner.h scanner.l
 
 test: jsonformatter
 	cat tests/001.txt | ./jsonformatter | cmp -s - tests/e001.txt
@@ -32,6 +32,6 @@ test: jsonformatter
 	./jsonformatter tests/015.txt | cmp -s - tests/e015.txt
 
 clean:
-	rm -rf tokenlizer.c tokenlizer.h parser.c parser.h
+	rm -rf scanner.c scanner.h parser.c parser.h
 	rm -rf jsonformatter
 
