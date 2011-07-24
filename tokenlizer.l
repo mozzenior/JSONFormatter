@@ -9,7 +9,7 @@
 	return NUMBER;
 }
 
-\"[^"]*\" {
+\"([^"]|\\\")*\" {
 	yylval.text = yytext;
 	return STRING;
 }

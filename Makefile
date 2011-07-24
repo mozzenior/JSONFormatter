@@ -29,6 +29,7 @@ test: jsonformatter
 	./jsonformatter tests/012.txt | cmp -s - tests/e012.txt
 	./jsonformatter tests/013.txt | cmp -s - tests/e013.txt
 	./jsonformatter tests/014.txt | cmp -s - tests/e014.txt
+	./jsonformatter tests/015.txt | cmp -s - tests/e015.txt
 
 clean:
 	rm -rf tokenlizer.c tokenlizer.h parser.c parser.h
