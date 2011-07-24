@@ -1,7 +1,5 @@
 %{
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 
 unsigned int indent = 0;
@@ -37,10 +35,14 @@ enum yytokentype prev_token = ROOT;
 root:	object
 		{
 			printf( "\n" );
+			prev_token = ROOT;
+			YYACCEPT;
 		}
 	|	array
 		{
 			printf( "\n" );
+			prev_token = ROOT;
+			YYACCEPT;
 		}
 	;
 
@@ -299,5 +301,5 @@ void print_indent( void )
 void
 yyerror( const char *msg )
 {
-	fprintf( stderr, "YYERROR: %s\n", msg );
+	fprintf( stderr, "\nYYERROR: %s\n", msg );
 }

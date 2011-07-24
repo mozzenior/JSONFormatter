@@ -54,11 +54,7 @@
 	return COLON;
 }
 
-[ \t] ;
-
-\n {
-	return 0;
-}
+[ \t\n] ;
 
 . {
 	return yytext[ 0 ];
